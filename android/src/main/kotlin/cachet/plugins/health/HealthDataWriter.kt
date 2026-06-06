@@ -351,8 +351,12 @@ class HealthDataWriter(
                     )
                 }
 
-                healthConnectClient.insertRecords(list)
-                result.success(true)
+                // Backport of health/14.0.0: return the inserted record IDs
+                // (exercise session first) so callers can attach a route to
+                // the session via finishWorkoutRoute (previously discarded,
+                // making route attachment impossible).
+                val response = healthConnectClient.insertRecords(list)
+                result.success(response.recordIdsList)
                 Log.i("FLUTTER_HEALTH::SUCCESS", "[Health Connect] Workout was successfully added!")
             } catch (e: Exception) {
                 Log.w(
@@ -361,7 +365,11 @@ class HealthDataWriter(
                 )
                 Log.w("FLUTTER_HEALTH::ERROR", e.message ?: "unknown error")
                 Log.w("FLUTTER_HEALTH::ERROR", e.stackTrace.toString())
-                result.success(false)
+                result.error(
+                        "WRITE_WORKOUT_ERROR",
+                        "[Health Connect] There was an error adding the workout",
+                        e.message ?: "unknown error"
+                )
             }
         }
     }
